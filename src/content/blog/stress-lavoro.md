@@ -1,5 +1,5 @@
 ---
-title: Burnout: quando il lavoro esaurisce l'anima
+title: "Burnout: quando il lavoro esaurisce l'anima"
 description: Il burnout non è stanchezza. È un esaurimento profondo che richiede attenzione e cura.
 date: 2025-09-02
 categories: [Stress]
