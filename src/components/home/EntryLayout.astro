@@ -10,7 +10,7 @@ interface Props {
 }
 
 const { entry } = Astro.props;
-const { image, imageAlt, title, content, button } = entry.data;
+const { image, imageAlt, title, subtitle, content, button } = entry.data;
 ---
 
 <BaseLayout>
@@ -34,8 +34,11 @@ const { image, imageAlt, title, content, button } = entry.data;
               
             )
           }
-          <h1 set:html={markdownify(title)} class="mb-4" />
-          <p set:html={markdownify(content)} class="mb-8" />
+          <div class="glass rounded-lg p-4 mb-8">
+            <h1 set:html={markdownify(title)} class="font-black" />
+            {subtitle && <p set:html={markdownify(subtitle)} class="mb-4 text-base" />}
+            <p set:html={markdownify(content)} class="font-black" />
+          </div>
           {
             button && (
               <Button
@@ -44,6 +47,7 @@ const { image, imageAlt, title, content, button } = entry.data;
                 newtab
                 hoverInvert
                 color=""
+                class="font-black"
               />
             )
           }

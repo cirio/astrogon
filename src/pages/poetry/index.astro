@@ -1,12 +1,60 @@
 ---
-import CollectionLayout from "@components/poetry/CollectionLayout.astro";
-import { getEntries } from "@lib/contentParser";
-import { sortByDate } from "@lib/sortFunctions";
-import type { PoetryEntry } from "@/types";
-import { getIndex } from "@lib/contentParser";
+import BaseLayout from "@components/base/BaseLayout.astro";
+// import CollectionLayout from "@components/poetry/CollectionLayout.astro";
+// import { getEntries } from "@lib/contentParser";
+// import { sortByDate } from "@lib/sortFunctions";
+// import type { PoetryEntry } from "@/types";
+// import { getIndex } from "@lib/contentParser";
 
-const entryIndex = (await getIndex("poetry")) as PoetryEntry;
-const entries = (await getEntries("poetry", sortByDate)) as PoetryEntry[];
+// const entryIndex = (await getIndex("poetry")) as PoetryEntry;
+// const entries = (await getEntries("poetry", sortByDate)) as PoetryEntry[];
 ---
 
-<CollectionLayout entryIndex={entryIndex} entries={entries} />
+<BaseLayout>
+  <section class="section">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="lg:col-6">
+          <div class="glass rounded-lg p-8">
+            <h1 class="mb-6">Contattami</h1>
+            <form>
+              <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="nome">Nome</label>
+                <input
+                  id="nome"
+                  type="text"
+                  placeholder="Il tuo nome"
+                  class="w-full rounded-md border border-border bg-bg-p px-4 py-2 dark:border-darkmode-border dark:bg-darkmode-bg-p"
+                />
+              </div>
+              <div class="mb-4">
+                <label class="block mb-1 font-semibold" for="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="la@tua.email"
+                  class="w-full rounded-md border border-border bg-bg-p px-4 py-2 dark:border-darkmode-border dark:bg-darkmode-bg-p"
+                />
+              </div>
+              <div class="mb-6">
+                <label class="block mb-1 font-semibold" for="messaggio">Messaggio</label>
+                <textarea
+                  id="messaggio"
+                  rows="5"
+                  placeholder="Scrivi il tuo messaggio..."
+                  class="w-full rounded-md border border-border bg-bg-p px-4 py-2 dark:border-darkmode-border dark:bg-darkmode-bg-p"
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                class="glass-t rounded-md px-6 py-2 font-bold"
+              >
+                Invia
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
