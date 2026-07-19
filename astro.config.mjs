@@ -12,7 +12,7 @@ import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://janedoe.com",
+  site: "https://astrogon-56h.pages.dev",
   base: "/",
   trailingSlash: "ignore",
   prefetch: {
