@@ -1,5 +1,5 @@
 ---
-title: Autostima: non è quello che pensi
+title: "Autostima: non è quello che pensi"
 description: L'autostima sana non è sentirsi sempre forti — è avere un rapporto onesto con sé stessi.
 date: 2025-07-18
 categories: [Crescita personale]
