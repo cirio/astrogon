@@ -2,19 +2,13 @@
 import Social from "@components/common/Social.astro";
 ---
 
-<footer class="glass container lg:my-4 lg:rounded-lg intersect:animate-fadeUp opacity-0">
-  <div class="row py-2 lg:py-0 items-center flex-wrap-reverse">
-    <div class="text-center lg:col-6 lg:mb-0 lg:text-left">
-      <ul>
-        <li class="m-2 inline-block">
-          <a href="/terms">&copy; Marco Ponti 2026</a>
-        </li>
-      </ul>
-    </div>
-    <div class="text-center lg:col-6 lg:my-0 flex items-center justify-center lg:justify-end">
+<footer class="glass container lg:my-3 lg:rounded-lg intersect:animate-fadeUp opacity-0">
+  <div class="py-1 text-center">
+    <div class="inline-flex flex-wrap items-center justify-center gap-x-3 [&_ul]:py-0">
+      <a href="/terms" class="leading-9">&copy; Marco Ponti - Termini &amp; Condizioni</a>
       <Social
         links={{
-          instagram: "https://www.instagram.com/"
+          instagram: "https://www.instagram.com/pontipsicoterapia.piacenza"
         }}
       />
     </div>
