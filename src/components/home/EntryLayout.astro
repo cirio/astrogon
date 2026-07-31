@@ -4,6 +4,7 @@ import { markdownify } from "@lib/textConverter";
 import Button from "@components/common/Button.astro";
 import type { HomeEntry } from "@/types";
 import { Image } from "astro:assets";
+import { FaRegEnvelope, FaRegEnvelopeOpen } from "react-icons/fa";
 
 interface Props {
   entry: HomeEntry;
@@ -45,10 +46,17 @@ const { image, imageAlt, title, subtitle, content, button } = entry.data;
                 label={button.label}
                 link={button.link}
                 newtab
-                hoverInvert
-                color=""
                 class="font-black"
-              />
+              >
+                <span slot="icon" class="relative inline-block h-[1.15em] w-[1.15em]">
+                  <FaRegEnvelope
+                    className="absolute inset-0 h-full w-full transition-opacity duration-200 group-hover:opacity-0"
+                  />
+                  <FaRegEnvelopeOpen
+                    className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                  />
+                </span>
+              </Button>
             )
           }
         </div>
