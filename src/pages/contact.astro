@@ -39,9 +39,10 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                   maxlength="100"
                   autocomplete="name"
                   placeholder="Il tuo nome"
+                  aria-describedby="errore-nome"
                   class={inputClass}
                 />
-                <p class={errorClass} data-error-for="nome" hidden></p>
+                <p id="errore-nome" class={errorClass} data-error-for="nome" hidden></p>
               </div>
 
               <div class="mb-4">
@@ -54,9 +55,10 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                   maxlength="254"
                   autocomplete="email"
                   placeholder="la@tua.email"
+                  aria-describedby="errore-email"
                   class={inputClass}
                 />
-                <p class={errorClass} data-error-for="email" hidden></p>
+                <p id="errore-email" class={errorClass} data-error-for="email" hidden></p>
               </div>
 
               <div class="mb-4">
@@ -69,8 +71,9 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                   minlength="10"
                   maxlength="5000"
                   placeholder="Scrivi il tuo messaggio..."
+                  aria-describedby="errore-messaggio"
                   class={inputClass}></textarea>
-                <p class={errorClass} data-error-for="messaggio" hidden></p>
+                <p id="errore-messaggio" class={errorClass} data-error-for="messaggio" hidden></p>
               </div>
 
               <div class="mb-6">
@@ -79,6 +82,7 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                     name="consenso"
                     type="checkbox"
                     required
+                    aria-describedby="errore-consenso"
                     class="mt-1 rounded border-border dark:border-darkmode-border"
                   />
                   <span>
@@ -86,7 +90,7 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                     trattamento dei dati per essere ricontattato.
                   </span>
                 </label>
-                <p class={errorClass} data-error-for="consenso" hidden></p>
+                <p id="errore-consenso" class={errorClass} data-error-for="consenso" hidden></p>
               </div>
 
               {/* Honeypot: fuori dallo schermo e fuori dal flusso di tabulazione. */}
@@ -136,10 +140,55 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
   src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 
 <script>
+  type Field = HTMLInputElement | HTMLTextAreaElement;
+
+  /**
+   * Testi di errore in italiano, allineati a quelli di /api/contact: l'utente
+   * legge la stessa frase sia che lo blocchi il browser sia che lo blocchi il server.
+   * I messaggi nativi del browser seguono la lingua della sua interfaccia, non
+   * quella della pagina, quindi vanno sostituiti a mano.
+   */
+  const MESSAGES: Record<
+    string,
+    { missing: string; short?: string; type?: string }
+  > = {
+    nome: {
+      missing: "Inserisci il tuo nome.",
+      short: "Il nome deve avere almeno 2 caratteri.",
+    },
+    email: {
+      missing: "Inserisci il tuo indirizzo email.",
+      type: "Controlla l'indirizzo email.",
+    },
+    messaggio: {
+      missing: "Scrivi un messaggio.",
+      short: "Scrivi un messaggio un po' più esteso (almeno 10 caratteri).",
+    },
+    consenso: {
+      missing: "Devi accettare l'informativa privacy per inviare il messaggio.",
+    },
+  };
+
+  const messageFor = (field: Field): string | null => {
+    if (field.validity.valid) return null;
+    const messages = MESSAGES[field.name];
+    if (!messages) return "Valore non valido.";
+    if (field.validity.valueMissing) return messages.missing;
+    if (field.validity.typeMismatch && messages.type) return messages.type;
+    if (field.validity.tooShort && messages.short) return messages.short;
+    if (field.validity.tooLong)
+      return `Hai superato il limite di ${field.maxLength} caratteri.`;
+    return "Valore non valido.";
+  };
+
   function initContactForm() {
     const form = document.querySelector<HTMLFormElement>("#contact-form");
     if (!form || form.dataset.bound === "true") return;
     form.dataset.bound = "true";
+
+    // Disattiviamo i popup nativi solo via JS: senza JS resta la validazione
+    // del browser, che è meglio di nessuna validazione.
+    form.noValidate = true;
 
     const status = form.querySelector<HTMLElement>("#contact-status");
     const submit = form.querySelector<HTMLButtonElement>("button[type=submit]");
@@ -178,13 +227,76 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
       }`;
     };
 
+    const errorSlot = (name: string) =>
+      form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+
+    const setError = (name: string, message: string) => {
+      const slot = errorSlot(name);
+      if (slot) {
+        slot.textContent = message;
+        slot.hidden = false;
+      }
+      form
+        .querySelector(`[name="${name}"]`)
+        ?.setAttribute("aria-invalid", "true");
+    };
+
+    const clearErrors = () => {
+      form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((slot) => {
+        slot.textContent = "";
+        slot.hidden = true;
+      });
+      form
+        .querySelectorAll("[aria-invalid]")
+        .forEach((field) => field.removeAttribute("aria-invalid"));
+    };
+
+    /** Ritorna true se il form è valido; altrimenti segnala i campi e mette il fuoco sul primo. */
+    const validate = () => {
+      const fields = Array.from(
+        form.querySelectorAll<Field>("input[name], textarea[name]"),
+      ).filter((field) => field.name in MESSAGES);
+
+      let firstInvalid: Field | null = null;
+      for (const field of fields) {
+        const message = messageFor(field);
+        if (!message) continue;
+        setError(field.name, message);
+        firstInvalid ??= field;
+      }
+      firstInvalid?.focus();
+      return firstInvalid === null;
+    };
+
+    // Appena l'utente corregge un campo, l'errore relativo sparisce.
+    const revalidateField = (event: Event) => {
+      const target = event.target;
+      if (
+        !(target instanceof HTMLInputElement) &&
+        !(target instanceof HTMLTextAreaElement)
+      )
+        return;
+      if (!(target.name in MESSAGES) || !target.validity.valid) return;
+      const slot = errorSlot(target.name);
+      if (slot) {
+        slot.textContent = "";
+        slot.hidden = true;
+      }
+      target.removeAttribute("aria-invalid");
+    };
+    form.addEventListener("input", revalidateField);
+    form.addEventListener("change", revalidateField);
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
-      form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((el) => {
-        el.textContent = "";
-        el.hidden = true;
-      });
+      clearErrors();
+      if (status) status.hidden = true;
+      if (!validate()) {
+        showStatus("Controlla i campi segnalati.", false);
+        return;
+      }
+
       if (elapsed) elapsed.value = String(Date.now() - loadedAt);
       if (submit) {
         submit.disabled = true;
@@ -208,13 +320,8 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
           showStatus("Messaggio inviato. Ti risponderò appena possibile.", true);
         } else {
           for (const [field, messages] of Object.entries(payload.fields ?? {})) {
-            const target = form.querySelector<HTMLElement>(
-              `[data-error-for="${field}"]`,
-            );
             const message = messages?.[0];
-            if (!target || !message) continue;
-            target.textContent = message;
-            target.hidden = false;
+            if (message) setError(field, message);
           }
           showStatus(payload.error ?? "Invio non riuscito. Riprova più tardi.", false);
         }

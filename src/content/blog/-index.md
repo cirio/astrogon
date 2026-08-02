@@ -1,4 +1,4 @@
 ---
-title: Blog Posts
-description: The blog of Jane and John Doe
+title: Articoli
+description: Il  Blog di Marco Ponti
 ---

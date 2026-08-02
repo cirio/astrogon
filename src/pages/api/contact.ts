@@ -28,7 +28,7 @@ const schema = z.object({
   messaggio: z
     .string()
     .trim()
-    .min(10, "Scrivi un messaggio un po' più esteso.")
+    .min(10, "Scrivi un messaggio un po' più esteso (almeno 10 caratteri).")
     .max(5_000, "Il messaggio supera i 5000 caratteri."),
   consenso: z.literal("on", {
     message: "Devi accettare l'informativa privacy per inviare il messaggio.",
