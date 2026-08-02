@@ -36,6 +36,9 @@ jspm_packages
 .env
 .env.*
 !.env.example
+# Secret locali letti da wrangler / platformProxy
+.dev.vars
+.dev.vars.*
 
 # Cache
 .cache

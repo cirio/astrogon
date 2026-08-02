@@ -10,6 +10,6 @@ interface Props {
 const { searchList } = Astro.props;
 ---
 
-<BaseLayout title="Search" description="Search for content on this site">
+<BaseLayout title="Search" description="Cerca contenuto su questo sito">
   <Search client:load searchList={searchList} />
 </BaseLayout>
