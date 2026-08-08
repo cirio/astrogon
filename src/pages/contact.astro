@@ -112,8 +112,31 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                 )
               }
 
-              <button type="submit" class="glass-t rounded-md px-6 py-2 font-bold">
-                Invia
+              <button
+                type="submit"
+                class="glass-t inline-flex items-center gap-2 rounded-md px-6 py-2 font-bold disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <svg
+                  data-spinner
+                  class="hidden h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    opacity="0.25"></circle>
+                  <path
+                    d="M12 2a10 10 0 0 1 10 10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    stroke-linecap="round"></path>
+                </svg>
+                <span data-label>Invia</span>
               </button>
 
               <p id="contact-status" class="mt-4 text-sm" role="status" aria-live="polite" hidden>
@@ -126,6 +149,38 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
                 </p>
               </noscript>
             </form>
+
+            {/* Prende il posto del form a invio riuscito. */}
+            <div id="contact-success" class="py-4 text-center" hidden>
+              <div
+                class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-600 text-white"
+              >
+                <svg
+                  class="h-9 w-9"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m5 13 4.5 4.5L19 7"></path>
+                </svg>
+              </div>
+              <h2 class="h4 mb-3" tabindex="-1">Messaggio inviato</h2>
+              <p class="mb-6">
+                Grazie per avermi scritto. Ho ricevuto il tuo messaggio e ti risponderò
+                al più presto.
+              </p>
+              <button
+                type="button"
+                id="contact-reset"
+                class="glass-t rounded-md px-6 py-2 font-bold"
+              >
+                Invia un altro messaggio
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -192,10 +247,21 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
 
     const status = form.querySelector<HTMLElement>("#contact-status");
     const submit = form.querySelector<HTMLButtonElement>("button[type=submit]");
+    const spinner = form.querySelector<SVGElement>("[data-spinner]");
+    const submitLabel = form.querySelector<HTMLElement>("[data-label]");
     const elapsed = form.querySelector<HTMLInputElement>("input[name=elapsed]");
     const widgetHolder = form.querySelector<HTMLElement>("#turnstile-widget");
+    const success = document.querySelector<HTMLElement>("#contact-success");
+    const resetButton = document.querySelector<HTMLButtonElement>("#contact-reset");
     const loadedAt = Date.now();
     let widgetId: string | undefined;
+
+    const setLoading = (loading: boolean) => {
+      if (submit) submit.disabled = loading;
+      spinner?.classList.toggle("hidden", !loading);
+      if (submitLabel) submitLabel.textContent = loading ? "Invio in corso…" : "Invia";
+      form.setAttribute("aria-busy", String(loading));
+    };
 
     const renderWidget = () => {
       if (!widgetHolder || !window.turnstile) return;
@@ -218,14 +284,34 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
       window.setTimeout(() => window.clearInterval(poll), 10_000);
     }
 
-    const showStatus = (message: string, ok: boolean) => {
+    // L'esito positivo non passa più di qui: al suo posto compare il blocco
+    // di conferma, quindi questa riga serve solo agli errori.
+    const showStatus = (message: string) => {
       if (!status) return;
       status.textContent = message;
       status.hidden = false;
-      status.className = `mt-4 text-sm ${
-        ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"
-      }`;
+      status.className = "mt-4 text-sm text-red-600 dark:text-red-400";
     };
+
+    /** Scambia form e conferma, spostando il fuoco perché il cambio sia percepibile. */
+    const showSuccess = () => {
+      form.hidden = true;
+      if (!success) return;
+      success.hidden = false;
+      success.querySelector<HTMLElement>("h2")?.focus();
+    };
+
+    const showForm = () => {
+      if (success) success.hidden = true;
+      form.hidden = false;
+      form.reset();
+      // Il widget va ripristinato dopo essere tornato visibile, altrimenti
+      // il nuovo invio riuserebbe un token già consumato.
+      window.turnstile?.reset(widgetId);
+      form.querySelector<HTMLInputElement>("input[name=nome]")?.focus();
+    };
+
+    resetButton?.addEventListener("click", showForm);
 
     const errorSlot = (name: string) =>
       form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
@@ -293,15 +379,12 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
       clearErrors();
       if (status) status.hidden = true;
       if (!validate()) {
-        showStatus("Controlla i campi segnalati.", false);
+        showStatus("Controlla i campi segnalati.");
         return;
       }
 
       if (elapsed) elapsed.value = String(Date.now() - loadedAt);
-      if (submit) {
-        submit.disabled = true;
-        submit.textContent = "Invio…";
-      }
+      setLoading(true);
 
       try {
         const response = await fetch(form.action, {
@@ -317,22 +400,21 @@ const errorClass = "mt-1 text-sm text-red-600 dark:text-red-400";
 
         if (response.ok && payload.ok) {
           form.reset();
-          showStatus("Messaggio inviato. Ti risponderò appena possibile.", true);
+          showSuccess();
         } else {
           for (const [field, messages] of Object.entries(payload.fields ?? {})) {
             const message = messages?.[0];
             if (message) setError(field, message);
           }
-          showStatus(payload.error ?? "Invio non riuscito. Riprova più tardi.", false);
+          showStatus(payload.error ?? "Invio non riuscito. Riprova più tardi.");
         }
       } catch {
-        showStatus("Connessione non disponibile. Riprova più tardi.", false);
+        showStatus("Connessione non disponibile. Riprova più tardi.");
       } finally {
+        // Il token è monouso: va ripristinato sia dopo un errore sia dopo
+        // un invio riuscito, in vista di un eventuale secondo messaggio.
         window.turnstile?.reset(widgetId);
-        if (submit) {
-          submit.disabled = false;
-          submit.textContent = "Invia";
-        }
+        setLoading(false);
       }
     });
   }
